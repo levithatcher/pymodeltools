@@ -1,6 +1,8 @@
 from __future__ import print_function
 
 from sklearn import cross_validation
+from sklearn.preprocessing import Imputer
+from sklearn.pipeline import Pipeline
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.linear_model import LogisticRegression
@@ -10,7 +12,6 @@ import numpy as np
 
 
 class TuneClassifier(object):
-
     """ This class tunes the hyperparameters for several common classifiers
     using GridSearchCV and AUC
 
@@ -25,7 +26,7 @@ class TuneClassifier(object):
     self : object
     """
 
-    def __init__(self, df, predictedcol):
+    def __init__(self, df, predictedcol, testsize):
         self.df = df
         self.predictedcol = predictedcol
 
@@ -34,7 +35,7 @@ class TuneClassifier(object):
         self.df = self.df[cols[cols].index]
 
         # remove rows with any null values
-        self.df = self.df[~self.df.isnull().any(axis=1)]
+        # self.df = self.df[~self.df.isnull().any(axis=1)]
 
         y = self.df[self.predictedcol]
         del self.df[self.predictedcol]
@@ -43,14 +44,19 @@ class TuneClassifier(object):
 
         # Split the dataset in two equal parts
         self.X_train, self.X_test, self.y_train, self.y_test = cross_validation.train_test_split(
-            X, y, test_size=0.5, random_state=0)
+            X, y, test_size=testsize, random_state=0)
 
     def logitreport(self, folds, cores):
-        self.folds=folds
-        self.cores=cores
+        self.folds = folds
+        self.cores = cores
+
+        pipeline = Pipeline([("imputer", Imputer(
+                                 axis=0)),
+                             ("logit", LogisticRegression())])
 
         # Set the parameters by cross-validation
-        tuned_parameters = [{'C': (np.logspace(-2, 2, 10))}]
+        parameters = {'logit__C': (np.logspace(-2, 2, 10)),
+                      'imputer__strategy': ('mean', 'median', 'most_frequent')}
 
         scores = ['roc_auc']
 
@@ -58,7 +64,8 @@ class TuneClassifier(object):
             print("# Tuning hyper-parameters for %s" % score)
             print()
 
-            clf = GridSearchCV(LogisticRegression(), tuned_parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
+            clf = GridSearchCV(pipeline, parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
+
             clf.fit(self.X_train, self.y_train)
 
             print("Best parameters set found on development set:")
@@ -82,11 +89,16 @@ class TuneClassifier(object):
             print()
 
     def treesreport(self, folds, cores):
-        self.folds=folds
-        self.cores=cores
+        self.folds = folds
+        self.cores = cores
+
+        pipeline = Pipeline([("imputer", Imputer(
+                                axis=0)),
+                             ("trees", DecisionTreeClassifier())])
 
         # Set the parameters by cross-validation
-        tuned_parameters = [{'criterion': ["gini","entropy"]}]
+        parameters = {'trees__criterion': ["gini", "entropy"],
+                    'imputer__strategy': ('mean', 'median', 'most_frequent')}
 
         scores = ['roc_auc']
 
@@ -94,7 +106,7 @@ class TuneClassifier(object):
             print("# Tuning hyper-parameters for %s" % score)
             print()
 
-            clf = GridSearchCV(DecisionTreeClassifier(), tuned_parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
+            clf = GridSearchCV(pipeline, parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
             clf.fit(self.X_train, self.y_train)
 
             print("Best parameters set found on development set:")
@@ -117,12 +129,18 @@ class TuneClassifier(object):
             print(classification_report(y_true, y_pred))
             print()
 
+
     def extratreesreport(self, folds, cores):
-        self.folds=folds
-        self.cores=cores
+        self.folds = folds
+        self.cores = cores
+
+        pipeline = Pipeline([("imputer", Imputer(
+                                axis=0)),
+                             ("extra", ExtraTreeClassifier())])
 
         # Set the parameters by cross-validation
-        tuned_parameters = [{'criterion': ["gini","entropy"]}]
+        parameters = {'extra__criterion': ["gini", "entropy"],
+                    'imputer__strategy': ('mean', 'median', 'most_frequent')}
 
         scores = ['roc_auc']
 
@@ -130,7 +148,7 @@ class TuneClassifier(object):
             print("# Tuning hyper-parameters for %s" % score)
             print()
 
-            clf = GridSearchCV(ExtraTreeClassifier(), tuned_parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
+            clf = GridSearchCV(pipeline, parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
             clf.fit(self.X_train, self.y_train)
 
             print("Best parameters set found on development set:")

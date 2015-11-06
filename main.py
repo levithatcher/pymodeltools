@@ -1,14 +1,14 @@
 import pandas as pd
-from pymodelaids import OverallRank, PersonalRank, TuneClassifier
+from pymodeltools import OverallRank, PersonalRank, TuneClassifier
 #import pyodbc
 
 
 if __name__ == "__main__":
 
     #### CSV Example of how to use TuneClassifier and printreport for hyperparameter optimization
-    df = pd.read_csv('SalesOrderHeader.csv')
+    df = pd.read_csv('SalesOrderHeaderNULL.csv')
 
-    p = TuneClassifier(df,'OnlineOrderFlag')
+    p = TuneClassifier(df,'OnlineOrderFlag',testsize=.5)
 
     p.logitreport(folds=2,cores=6)
 
