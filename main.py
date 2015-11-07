@@ -8,13 +8,15 @@ if __name__ == "__main__":
     #### CSV Example of how to use TuneClassifier and printreport for hyperparameter optimization
     df = pd.read_csv('SalesOrderHeaderNULL.csv')
 
-    p = TuneClassifier(df,'OnlineOrderFlag',testsize=.5)
+    p = TuneClassifier(df,'OnlineOrderFlag', testsize=.5)
 
     p.logitreport(folds=2,cores=6)
 
-    p.treesreport(folds=2,cores=6)
+    p.treesreport(folds=2, cores=6)
 
-    p.extratreesreport(folds=2,cores=6)
+    p.extratreesreport(folds=2, cores=6)
+
+    p.randomforestreport(folds=2, cores=6)
 
     ## CSV example of how to use OverallRank class and methods printit, plotit
     ## General model feature importance
