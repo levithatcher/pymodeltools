@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from sklearn import cross_validation
 from sklearn.preprocessing import Imputer
 from sklearn.pipeline import Pipeline
@@ -56,6 +54,7 @@ class TuneClassifier(object):
 
         pipeline = Pipeline([("imputer", Imputer(
                                  axis=0)),
+                            #todo: get Randomized feature selection working
                             ("randlogit", RandomizedLogisticRegression()),
                             ("logit", LogisticRegression())
                              ])

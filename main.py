@@ -2,7 +2,6 @@ import pandas as pd
 from pymodeltools import OverallRank, PersonalRank, TuneClassifier
 #import pyodbc
 
-
 if __name__ == "__main__":
 
     #### CSV Example of how to use TuneClassifier and printreport for hyperparameter optimization
@@ -10,7 +9,7 @@ if __name__ == "__main__":
 
     p = TuneClassifier(df,'OnlineOrderFlag', testsize=.5)
 
-    p.logitreport(folds=2,cores=6)
+    p.logitreport(folds=5,cores=6)
 
     p.treesreport(folds=2, cores=6)
 
@@ -20,17 +19,17 @@ if __name__ == "__main__":
 
     ## CSV example of how to use OverallRank class and methods printit, plotit
     ## General model feature importance
-    # t = OverallRank(df,'RejectedQty')
+    #t = OverallRank(df,'OnlineOrderFlag')
     #
-    # t.printit()
+    #t.printit()
     #
-    # #t.plotit()
+    #t.plotit()
     #
     ## CSV example of how to use PersonalRank class and methods printlist
     ## Personalized (ie, individual row) feature importance
-    # t2 = PersonalRank(df, 'RejectedQty',0.001)
+    #t2 = PersonalRank(df, 'RejectedQty',0.001)
     #
-    # t2.printlist()
+    #t2.printlist()
 
     ## AND corresponding example of overall feature importance ranking for SQL Connection
     # cnxn = pyodbc.connect(DRIVER='{SQL Server Native Client 11.0}', SERVER='localhost',\
