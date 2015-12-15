@@ -1,7 +1,16 @@
 import numpy as np
-from sklearn import ensemble
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
 from sklearn import cross_validation
+from sklearn.preprocessing import Imputer
+from sklearn.pipeline import Pipeline
+from sklearn.feature_selection import SelectFromModel
+
 import matplotlib.pyplot as plt
+import pandas as pd
+import sys
 
 
 class OverallRank(object):
@@ -33,14 +42,19 @@ class OverallRank(object):
         # split data into training and test
         X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.25, random_state=42)
 
-        # Build a forest and compute the feature importances
-        forest = ensemble.ExtraTreesClassifier(n_estimators=250, random_state=0)
+        pipeline = Pipeline([("imputer", Imputer(strategy='mean', axis=0)),
+                             # Todo: get list working with feature selection (how to grab names after selected?)
+                             # ("feature_selection", SelectFromModel(
+                             #     LinearSVC(), threshold="median")),
+                             ("extratrees", ExtraTreesClassifier(n_estimators=250, random_state=0))
+                             ])
 
         # Train model--note that as of 10/08/2015 only ExtraTrees (of sklearn) can show feature importances this way
-        forest.fit(X_train, y_train)
+        pipeline.fit(X_train, y_train)
 
-        self.importances = forest.feature_importances_
-        self.std = np.std([tree.feature_importances_ for tree in forest.estimators_], axis=0)
+        # Calculate feature importances
+        self.importances = pipeline.named_steps['extratrees'].feature_importances_
+        self.std = np.std([tree.feature_importances_ for tree in pipeline.named_steps['extratrees'].estimators_], axis=0)
 
         self.indices = np.argsort(self.importances)[::-1]
 
@@ -84,6 +98,8 @@ class OverallRank(object):
         Pyplot figure showing ranking of feature importances.
         Saved figure.
         """
+        print(self.namelist)
+        print(self.colnames)
 
         # Plot the feature importances of the forest
         plt.figure()

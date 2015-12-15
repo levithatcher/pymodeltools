@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     p = TuneClassifier(df,'OnlineOrderFlag', testsize=.5)
 
-    p.logitreport(folds=5,cores=6)
+    p.logitreport(folds=2,cores=6)
 
     p.treesreport(folds=2, cores=6)
 
@@ -17,13 +17,15 @@ if __name__ == "__main__":
 
     p.randomforestreport(folds=2, cores=6)
 
+
     ## CSV example of how to use OverallRank class and methods printit, plotit
     ## General model feature importance
     #t = OverallRank(df,'OnlineOrderFlag')
-    #
+
     #t.printit()
-    #
+
     #t.plotit()
+
     #
     ## CSV example of how to use PersonalRank class and methods printlist
     ## Personalized (ie, individual row) feature importance

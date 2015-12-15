@@ -52,9 +52,8 @@ class TuneClassifier(object):
         self.folds = folds
         self.cores = cores
 
-        pipeline = Pipeline([("imputer", Imputer(
-                                 axis=0)),
-                            #todo: get Randomized feature selection working
+        pipeline = Pipeline([("imputer", Imputer(axis=0)),
+                             # Todo: get randomized feature selection working (test on IU)
                             ("randlogit", RandomizedLogisticRegression()),
                             ("logit", LogisticRegression())
                              ])
