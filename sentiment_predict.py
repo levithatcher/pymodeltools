@@ -1,77 +1,65 @@
-from sklearn import cross_validation
-from sklearn.preprocessing import Imputer
-from sklearn.pipeline import Pipeline
-from sklearn.grid_search import GridSearchCV
-from sklearn.feature_selection import SelectFromModel
-from sklearn.metrics import classification_report
 from sklearn.linear_model import LogisticRegression
-from sklearn.linear_model import RandomizedLogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.tree import ExtraTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import LinearSVC
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.cross_validation import train_test_split
+from sklearn.grid_search import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import classification_report
+from nltk import word_tokenize
+from nltk.stem.porter import PorterStemmer
 import numpy as np
+import string
 
 
-class TuneClassifier(object):
-    """ This class tunes the hyperparameters for several common classifiers
-    using GridSearchCV and AUC
+class TweetSentExample(object):
 
-    Parameters
-    ----------
-    df : pandas dataframe
+    def __init__(self, df, predictedcol, textcol, testsize):
 
-    predicted : y column (discrete) who's values are being predicted
-
-    Returns
-    -------
-    self : object
-    """
-
-    def __init__(self, df, predictedcol, testsize):
         self.df = df
         self.predictedcol = predictedcol
-
-        # remove columns that are objects (ie not numbers)
-        cols = (self.df.dtypes != object)
-        self.df = self.df[cols[cols].index]
+        self.textcol = textcol
+        self.stemmer = PorterStemmer()
 
         # remove rows with any null values
-        # self.df = self.df[~self.df.isnull().any(axis=1)]
+        self.df = self.df[~self.df.isnull().any(axis=1)]
 
         y = self.df[self.predictedcol]
-        del self.df[self.predictedcol]
-
-        X = self.df
+        X = self.df[self.textcol]
 
         # Split the dataset in two equal parts
-        self.X_train, self.X_test, self.y_train, self.y_test = cross_validation.train_test_split(
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             X, y, test_size=testsize, random_state=0)
 
     def logitreport(self, folds, cores):
         self.folds = folds
         self.cores = cores
 
-        pipeline = Pipeline([("imputer", Imputer(axis=0)),
-                             # Todo: get Logistic feature selection working (test on IU)
-                            ("randlogit", RandomizedLogisticRegression()),
-                            ("logit", LogisticRegression())
-                             ])
+        print('hola1')
+        pipeline = Pipeline([
+        ('tfidf', TfidfVectorizer(tokenizer=self.tokenize, input="content")),
+        ('logit', LogisticRegression())
+        ])
 
         # Set the parameters by cross-validation
         parameters = {'logit__C': (np.logspace(-2, 2, 10)),
-                      'imputer__strategy': ('mean', 'median', 'most_frequent')}
+                      'tfidf__stop_words': ['english',None]}
 
         scores = ['roc_auc']
 
+        print('hola2')
         for score in scores:
             print("# Tuning hyper-parameters for %s" % score)
             print()
 
             clf = GridSearchCV(pipeline, parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
 
+            print('hola3-prefit')
+            print('shapes')
+            print(self.X_train.shape)
+            print(self.y_train.shape)
+            print(type(self.X_train))
             clf.fit(self.X_train, self.y_train)
-
+            print('hola4-postfit')
             print("Best parameters set found on development set:")
             print()
             print(clf.best_estimator_)
@@ -92,20 +80,17 @@ class TuneClassifier(object):
             print(classification_report(y_true, y_pred))
             print()
 
-    def treesreport(self, folds, cores):
+    def logitsimplevectreport(self, folds, cores):
         self.folds = folds
         self.cores = cores
 
-        pipeline = Pipeline([("imputer", Imputer(
-                                 axis=0)),
-                             ("feature_selection", SelectFromModel(
-                                 LinearSVC(), threshold="median")),
-                             ("trees", DecisionTreeClassifier())])
+        pipeline = Pipeline([
+        ('tfidf', TfidfVectorizer(input="content", stop_words='english')),
+        ('logit', LogisticRegression())
+        ])
 
         # Set the parameters by cross-validation
-        parameters = {'trees__criterion': ["gini", "entropy"],
-                      'trees__class_weight': ["balanced"],
-                    'imputer__strategy': ('mean', 'median', 'most_frequent')}
+        parameters = {'logit__C': (np.logspace(-2, 2, 10))}
 
         scores = ['roc_auc']
 
@@ -114,6 +99,7 @@ class TuneClassifier(object):
             print()
 
             clf = GridSearchCV(pipeline, parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
+
             clf.fit(self.X_train, self.y_train)
 
             print("Best parameters set found on development set:")
@@ -136,20 +122,17 @@ class TuneClassifier(object):
             print(classification_report(y_true, y_pred))
             print()
 
-    def extratreesreport(self, folds, cores):
+    def logitsupersimplevectreport(self, folds, cores):
         self.folds = folds
         self.cores = cores
 
-        pipeline = Pipeline([("imputer", Imputer(
-                                axis=0)),
-                             ("feature_selection", SelectFromModel(
-                                LinearSVC(), threshold="median")),
-                             ("extra", ExtraTreeClassifier())])
+        pipeline = Pipeline([
+        ('tfidf', TfidfVectorizer(input="content")),
+        ('logit', LogisticRegression())
+        ])
 
         # Set the parameters by cross-validation
-        parameters = {'extra__criterion': ["gini", "entropy"],
-                    'extra__class_weight': ["balanced"],
-                    'imputer__strategy': ('mean', 'median', 'most_frequent')}
+        parameters = {'logit__C': (np.logspace(-2, 2, 10))}
 
         scores = ['roc_auc']
 
@@ -158,6 +141,7 @@ class TuneClassifier(object):
             print()
 
             clf = GridSearchCV(pipeline, parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
+
             clf.fit(self.X_train, self.y_train)
 
             print("Best parameters set found on development set:")
@@ -180,22 +164,18 @@ class TuneClassifier(object):
             print(classification_report(y_true, y_pred))
             print()
 
-    def randomforestreport(self, folds, cores):
+    def logit_simplengrams(self, folds, cores):
         self.folds = folds
         self.cores = cores
 
-        pipeline = Pipeline([("imputer", Imputer(
-                                axis=0)),
-                             ("feature_selection", SelectFromModel(
-                                LinearSVC(), threshold="median")),
-                             ("randforest", RandomForestClassifier())])
+        pipeline = Pipeline([
+        ('tfidf', TfidfVectorizer(input="content")),
+        ('logit', LogisticRegression())
+        ])
 
         # Set the parameters by cross-validation
-        parameters = {'randforest__criterion': ["gini", "entropy"],
-                    'randforest__n_estimators': [10,50,100,250,500],
-                    'randforest__bootstrap': [True, False],
-                    'randforest__class_weight': ["balanced", "balanced_subsample"],
-                    'imputer__strategy': ('mean', 'median', 'most_frequent')}
+        parameters = {'tfidf__ngram_range': [(1,1),(1,2),(1,3)],
+            'logit__C': (np.logspace(-2, 2, 10))}
 
         scores = ['roc_auc']
 
@@ -204,6 +184,7 @@ class TuneClassifier(object):
             print()
 
             clf = GridSearchCV(pipeline, parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
+
             clf.fit(self.X_train, self.y_train)
 
             print("Best parameters set found on development set:")
@@ -225,3 +206,18 @@ class TuneClassifier(object):
             y_true, y_pred = self.y_test, clf.predict(self.X_test)
             print(classification_report(y_true, y_pred))
             print()
+
+
+    @staticmethod
+    def stem_tokens(tokens, stemmer):
+        stemmed = []
+        for item in tokens:
+            stemmed.append(stemmer.stem(item))
+        return stemmed
+
+    def tokenize(self, text):
+        text = "".join([ch for ch in text if ch not in string.punctuation])
+        tokens = word_tokenize(text)
+
+        stems = self.stem_tokens(tokens, self.stemmer)
+        return stems

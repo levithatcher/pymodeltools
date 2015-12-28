@@ -7,10 +7,7 @@ from sklearn import cross_validation
 from sklearn.preprocessing import Imputer
 from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectFromModel
-
 import matplotlib.pyplot as plt
-import pandas as pd
-import sys
 
 
 class OverallRank(object):
