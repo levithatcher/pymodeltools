@@ -4,20 +4,17 @@ from pymodeltools import TweetSentExample, OverallRank, PersonalRank, TuneClassi
 
 if __name__ == "__main__":
 
-    df = pd.read_csv('Sentiment Analysis Dataset.csv', error_bad_lines=False, nrows=50000)
+    df = pd.read_csv('Sentiment Analysis Dataset.csv', error_bad_lines=False, nrows=100000)
 
     o = TweetSentExample(df, predictedcol='Sentiment', textcol='SentimentText', testsize=.25)
 
-    o.logitreport(folds=2, cores=5)
+    o.notokenlogitreport(folds=2, cores=7)
 
-    #o.logitsimplevectreport(folds=2, cores=5)
+    o.tokenlogitreport(folds=2, cores=7)
 
-    #o.logitsupersimplevectreport(folds=2, cores=5)
+    o.notokensvcreport(folds=2, cores=-1)
 
-    #o.logit_simplengrams(folds=2, cores=5)
-
-
-
+    o.tokensvcreport(folds=2, cores=-1)
 
     #### CSV Example of how to use TuneClassifier and printreport for hyperparameter optimization
     #df = pd.read_csv('SalesOrderHeaderNULL.csv')

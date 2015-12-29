@@ -1,4 +1,5 @@
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.cross_validation import train_test_split
@@ -30,67 +31,19 @@ class TweetSentExample(object):
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             X, y, test_size=testsize, random_state=0)
 
-    def logitreport(self, folds, cores):
-        self.folds = folds
-        self.cores = cores
-
-        print('hola1')
-        pipeline = Pipeline([
-        ('tfidf', TfidfVectorizer(tokenizer=self.tokenize, input="content")),
-        ('logit', LogisticRegression())
-        ])
-
-        # Set the parameters by cross-validation
-        parameters = {'logit__C': (np.logspace(-2, 2, 10)),
-                      'tfidf__stop_words': ['english',None]}
-
-        scores = ['roc_auc']
-
-        print('hola2')
-        for score in scores:
-            print("# Tuning hyper-parameters for %s" % score)
-            print()
-
-            clf = GridSearchCV(pipeline, parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
-
-            print('hola3-prefit')
-            print('shapes')
-            print(self.X_train.shape)
-            print(self.y_train.shape)
-            print(type(self.X_train))
-            clf.fit(self.X_train, self.y_train)
-            print('hola4-postfit')
-            print("Best parameters set found on development set:")
-            print()
-            print(clf.best_estimator_)
-            print()
-            print("Grid scores on development set:")
-            print()
-            for params, mean_score, scores in clf.grid_scores_:
-                print("%0.3f (+/-%0.03f) for %r"
-                      % (mean_score, scores.std() / 2, params))
-            print()
-
-            print("Detailed classification report:")
-            print()
-            print("The model is trained on the full development set.")
-            print("The scores are computed on the full evaluation set.")
-            print()
-            y_true, y_pred = self.y_test, clf.predict(self.X_test)
-            print(classification_report(y_true, y_pred))
-            print()
-
-    def logitsimplevectreport(self, folds, cores):
+    def tokenlogitreport(self, folds, cores):
         self.folds = folds
         self.cores = cores
 
         pipeline = Pipeline([
-        ('tfidf', TfidfVectorizer(input="content", stop_words='english')),
+        ('tfidf', TfidfVectorizer(tokenizer=self.tokenize)),
         ('logit', LogisticRegression())
         ])
 
         # Set the parameters by cross-validation
-        parameters = {'logit__C': (np.logspace(-2, 2, 10))}
+        parameters = {'tfidf__stop_words': ['english',None],
+                      'tfidf__ngram_range': [(1,1),(1,2)]}
+                        #'logit__C': (np.logspace(-2, 2, 10))}
 
         scores = ['roc_auc']
 
@@ -122,17 +75,18 @@ class TweetSentExample(object):
             print(classification_report(y_true, y_pred))
             print()
 
-    def logitsupersimplevectreport(self, folds, cores):
+    def notokenlogitreport(self, folds, cores):
         self.folds = folds
         self.cores = cores
 
         pipeline = Pipeline([
-        ('tfidf', TfidfVectorizer(input="content")),
+        ('tfidf', TfidfVectorizer()),
         ('logit', LogisticRegression())
         ])
 
         # Set the parameters by cross-validation
-        parameters = {'logit__C': (np.logspace(-2, 2, 10))}
+        parameters = {'tfidf__stop_words': ['english',None],
+                      'tfidf__ngram_range': [(1,1),(1,2)]}
 
         scores = ['roc_auc']
 
@@ -164,18 +118,62 @@ class TweetSentExample(object):
             print(classification_report(y_true, y_pred))
             print()
 
-    def logit_simplengrams(self, folds, cores):
+    def tokensvcreport(self, folds, cores):
         self.folds = folds
         self.cores = cores
 
         pipeline = Pipeline([
-        ('tfidf', TfidfVectorizer(input="content")),
-        ('logit', LogisticRegression())
+        ('tfidf', TfidfVectorizer(tokenizer=self.tokenize)),
+        ('svc', LinearSVC())
         ])
 
         # Set the parameters by cross-validation
-        parameters = {'tfidf__ngram_range': [(1,1),(1,2),(1,3)],
-            'logit__C': (np.logspace(-2, 2, 10))}
+        parameters = {'tfidf__stop_words': ['english',None],
+                      'tfidf__ngram_range': [(1,1),(1,2)]}
+
+
+        scores = ['roc_auc']
+
+        for score in scores:
+            print("# Tuning hyper-parameters for %s" % score)
+            print()
+
+            clf = GridSearchCV(pipeline, parameters, cv=self.folds, scoring=score, n_jobs=self.cores)
+
+            clf.fit(self.X_train, self.y_train)
+
+            print("Best parameters set found on development set:")
+            print()
+            print(clf.best_estimator_)
+            print()
+            print("Grid scores on development set:")
+            print()
+            for params, mean_score, scores in clf.grid_scores_:
+                print("%0.3f (+/-%0.03f) for %r"
+                      % (mean_score, scores.std() / 2, params))
+            print()
+
+            print("Detailed classification report:")
+            print()
+            print("The model is trained on the full development set.")
+            print("The scores are computed on the full evaluation set.")
+            print()
+            y_true, y_pred = self.y_test, clf.predict(self.X_test)
+            print(classification_report(y_true, y_pred))
+            print()
+
+    def notokensvcreport(self, folds, cores):
+        self.folds = folds
+        self.cores = cores
+
+        pipeline = Pipeline([
+        ('tfidf', TfidfVectorizer()),
+        ('svc', LinearSVC())
+        ])
+
+        # Set the parameters by cross-validation
+        parameters = {'tfidf__stop_words': ['english',None],
+                      'tfidf__ngram_range': [(1,1),(1,2)]}
 
         scores = ['roc_auc']
 
@@ -218,6 +216,5 @@ class TweetSentExample(object):
     def tokenize(self, text):
         text = "".join([ch for ch in text if ch not in string.punctuation])
         tokens = word_tokenize(text)
-
         stems = self.stem_tokens(tokens, self.stemmer)
         return stems
