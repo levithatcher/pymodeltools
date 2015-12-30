@@ -1,31 +1,31 @@
 import pandas as pd
-from pymodeltools import TweetSentExample, OverallRank, PersonalRank, TuneClassifier, PredictListFactors
+from pymodeltools import TweetSentExample, OverallRank, PersonalRank, TuneModel, PredictListFactors
 #import pyodbc
 
 if __name__ == "__main__":
 
-    df = pd.read_csv('Sentiment Analysis Dataset.csv', error_bad_lines=False, nrows=100000)
-
-    o = TweetSentExample(df, predictedcol='Sentiment', textcol='SentimentText', testsize=.25)
-
-    o.notokenlogitreport(folds=2, cores=7)
-
-    o.tokenlogitreport(folds=2, cores=7)
-
-    o.notokensvcreport(folds=2, cores=-1)
-
-    o.tokensvcreport(folds=2, cores=-1)
+    # df = pd.read_csv('Sentiment Analysis Dataset.csv', error_bad_lines=False, nrows=100000)
+    #
+    # o = TweetSentExample(df, predictedcol='Sentiment', textcol='SentimentText', testsize=.25)
+    #
+    # o.notokenlogitreport(folds=2, cores=7)
+    #
+    # o.tokenlogitreport(folds=2, cores=7)
+    #
+    # o.notokensvcreport(folds=2, cores=-1)
+    #
+    # o.tokensvcreport(folds=2, cores=-1)
 
     #### CSV Example of how to use TuneClassifier and printreport for hyperparameter optimization
-    #df = pd.read_csv('SalesOrderHeaderNULL.csv')
+    df = pd.read_csv('SalesOrderHeaderNULL.csv')
 
     #p = PredictListFactors(df, 'OnlineOrderFlag', 'SalesPersonID', 'ShipMethodID')
 
     #p.predictfactors()
 
-    # p = TuneClassifier(df,'OnlineOrderFlag', testsize=.5)
+    p = TuneModel(df,'OnlineOrderFlag', testsize=.5, type='regress')
     #
-    # p.logitreport(folds=2,cores=6)
+    p.linearreport(folds=2,cores=6)
     #
     # p.treesreport(folds=2, cores=6)
     #
