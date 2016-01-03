@@ -17,6 +17,7 @@ from sklearn.svm import LinearSVC
 from sklearn.svm import LinearSVR
 import numpy as np
 from pymodeltools import plotutilities
+from pymodeltools import modelutilities
 
 
 class TuneModel(object):
@@ -34,12 +35,13 @@ class TuneModel(object):
     self : object
     """
 
-    def __init__(self, df, predictedcol, testsize, type, scores):
+    def __init__(self, df, predictedcol, testsize, modeltype, impute, scores):
         self.df = df
         self.predictedcol = predictedcol
-        self.type = type
+        self.modeltype = modeltype
         # Todo: make scores property, such that people are warned that they have to pass array
         self.scores = scores
+        self.impute = impute
 
         # remove columns that are objects (ie not numbers)
         cols = (self.df.dtypes != object)
@@ -61,7 +63,7 @@ class TuneModel(object):
         self.folds = folds
         self.cores = cores
 
-        if self.type == 'class':
+        if self.modeltype == 'class':
 
             self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
                                  # Todo: get Logistic feature selection working (test on IU)
@@ -69,34 +71,37 @@ class TuneModel(object):
                                 ("logit", LogisticRegression())
                                  ])
 
-            # Set the parameters by cross-validation
-            self.parameters = {'logit__C': (np.logspace(-2, 2, 10)),
-                              'imputer__strategy': ('mean', 'median', 'most_frequent')}
+            algorithm = "Logistic_Regression"
 
-        elif self.type == 'regress':
+            baseparam = "{'logit__C': (np.logspace(-2, 2, 10))"
 
-            self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
-                                 # Todo: get Logistic feature selection working (test on IU)
-                                #("randlogit", RandomizedLogisticRegression()),
-                                ("regress", LinearRegression())
-                                 ])
+        elif self.modeltype == 'regress':
 
-            # Set the parameters by cross-validation
-            self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent'),
-                          'regress__normalize': (False, True)}
+            algorithm = LinearRegression()
+
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+
+            # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
+            #                      # Todo: get Logistic feature selection working (test on IU)
+            #                     #("randlogit", RandomizedLogisticRegression()),
+            #                     ("regress", LinearRegression())
+
+            baseparam = {'regress__normalize': (False, True)}
+
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
         # Fit/Predict and run report
         TuneModel.clfreport(self)
 
         #Todo: make plotting symmetric between regress/class
         # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save)
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save, title=algorithm)
 
     def treesreport(self, folds, cores, plotit, save):
         self.folds = folds
         self.cores = cores
 
-        if self.type == "class":
+        if self.modeltype == "class":
 
             self.pipeline = Pipeline([("imputer", Imputer(
                                      axis=0)),
@@ -104,75 +109,96 @@ class TuneModel(object):
                                      LinearSVC(), threshold="median")),
                                  ("trees", DecisionTreeClassifier())])
 
+            title = "Decision_Tree_Classifier"
+
+            #algorithm = DecisionTreeClassifier()
+
+            #self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+
             # Set the parameters by cross-validation
             self.parameters = {'trees__criterion': ["gini", "entropy"],
                           'trees__class_weight': ["balanced"],
                           'imputer__strategy': ('mean', 'median', 'most_frequent')}
 
-        elif self.type == "regress":
+        elif self.modeltype == "regress":
 
-            self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
-                     # Todo: get Logistic feature selection working (test on IU)
-                    #("randlogit", RandomizedLogisticRegression()),
-                    ("regress", DecisionTreeRegressor())
-                     ])
+            # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
+            #          # Todo: get Logistic feature selection working (test on IU)
+            #         #("randlogit", RandomizedLogisticRegression()),
+            #         ("regress", DecisionTreeRegressor())
+            #          ])
 
-            # Set the parameters by cross-validation
-            self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent'),
-                          'regress__splitter': ('best','random')}
+            algorithm = DecisionTreeRegressor()
 
-        # Fit/Predict and run report
-        TuneModel.clfreport(self)
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
 
-        # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save)
+            baseparam = {'regress__splitter': ('best','random')}
 
-    def extratreesreport(self, folds, cores, plotit, save):
-        self.folds = folds
-        self.cores = cores
-
-        if self.type == "class":
-
-            self.pipeline = Pipeline([("imputer", Imputer(
-                                    axis=0)),
-                                 ("feature_selection", SelectFromModel(
-                                    LinearSVC(), threshold="median")),
-                                 ("extra", ExtraTreeClassifier())])
-
-            # Set the parameters by cross-validation
-            self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent'),
-                          'extra__criterion': ["gini", "entropy"],
-                          'extra__class_weight': ["balanced"]
-                          }
-
-        elif self.type == "regress":
-
-            self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
-                     # Todo: get Logistic feature selection working (test on IU)
-                    #("randlogit", RandomizedLogisticRegression()),
-                    ("regress", ExtraTreeRegressor())
-                     ])
-
-            # Set the parameters by cross-validation
-            self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent')}
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
         # Fit/Predict and run report
         TuneModel.clfreport(self)
 
         # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save)
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save, title=algorithm)
+
+    # def extratreesreport(self, folds, cores, plotit, save):
+    #     # Todo: this algo should only "only be used within ensemble methods"
+    #     self.folds = folds
+    #     self.cores = cores
+    #
+    #     if self.modeltype == "class":
+    #
+    #         self.pipeline = Pipeline([("imputer", Imputer(
+    #                                 axis=0)),
+    #                              ("feature_selection", SelectFromModel(
+    #                                 LinearSVC(), threshold="median")),
+    #                              ("extra", ExtraTreeClassifier())])
+    #
+    #         title = "Extra_Tree_Classifier"
+    #
+    #         # Set the parameters by cross-validation
+    #         self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent'),
+    #                       'extra__criterion': ["gini", "entropy"],
+    #                       'extra__class_weight': ["balanced"]
+    #                       }
+    #
+    #     elif self.modeltype == "regress":
+    #
+    #         # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
+    #         #          # Todo: get Logistic feature selection working (test on IU)
+    #         #         #("randlogit", RandomizedLogisticRegression()),
+    #         #         ("regress", ExtraTreeRegressor())
+    #         #          ])
+    #
+    #         algorithm = ExtraTreeRegressor()
+    #
+    #         self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+    #
+    #         baseparam = {'regress__splitter': ('best','random')}
+    #
+    #         self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
+    #
+    #
+    #     # Fit/Predict and run report
+    #     TuneModel.clfreport(self)
+    #
+    #     # Plot prediction against truth
+    #     if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save, title=title)
 
     def randomforestreport(self, folds, cores, plotit, save):
         self.folds = folds
         self.cores = cores
 
-        if self.type == "class":
+        if self.modeltype == "class":
 
             self.pipeline = Pipeline([("imputer", Imputer(
                                     axis=0)),
                                  ("feature_selection", SelectFromModel(
                                     LinearSVC(), threshold="median")),
                                  ("randforest", RandomForestClassifier())])
+
+            title = "Random_Forest_Classifier"
 
             # Set the parameters by cross-validation
             self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent'),
@@ -181,30 +207,34 @@ class TuneModel(object):
                         'randforest__bootstrap': [True, False],
                         'randforest__class_weight': ["balanced", "balanced_subsample"]}
 
-        elif self.type == "regress":
+        elif self.modeltype == "regress":
 
-            self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
-                     # Todo: get Logistic feature selection working (test on IU)
-                    #("randlogit", RandomizedLogisticRegression()),
-                    ("regress", RandomForestRegressor())
-                     ])
+            algorithm = RandomForestRegressor()
 
-            # Set the parameters by cross-validation
-            self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent'),
-                          'regress__n_estimators': (10,50,100),
-                          'regress__bootstrap': (True, False)}
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+
+            baseparam = {'regress__n_estimators': [10,50,100,250,500],
+                        'regress__bootstrap': [True, False]}
+
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
+
+            # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
+            #          # Todo: get Logistic feature selection working (test on IU)
+            #         #("randlogit", RandomizedLogisticRegression()),
+            #         ("regress", RandomForestRegressor())
+            #          ])
 
         # Fit/Predict and run report
         TuneModel.clfreport(self)
 
         # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save)
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save, title=algorithm)
 
     def svm(self, folds, cores, plotit, save):
         self.folds = folds
         self.cores = cores
 
-        if self.type == "class":
+        if self.modeltype == "class":
 
             self.pipeline = Pipeline([("imputer", Imputer(
                                     axis=0)),
@@ -216,23 +246,29 @@ class TuneModel(object):
             self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent'),
                           'lsvc__C': (np.logspace(-2, 2, 10))}
 
-        elif self.type == "regress":
+            title = "Linear_SVC"
 
-            self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
-                                  # Todo: get Logistic feature selection working (test on IU)
-                                  #("randlogit", RandomizedLogisticRegression()),
-                                 ("lsvr", LinearSVR())])
+        elif self.modeltype == "regress":
 
-            # Set the parameters by cross-validation
-            self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent'),
-                          'lsvr__C': (np.logspace(-2, 2, 10))}
+            # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
+            #                       # Todo: get Logistic feature selection working (test on IU)
+            #                       #("randlogit", RandomizedLogisticRegression()),
+            #                      ("lsvr", LinearSVR())])
+
+            algorithm = LinearSVR()
+
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+
+            baseparam = {'regress__C': (np.logspace(-2, 2, 10))}
+
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
         # Fit/Predict and run report
         TuneModel.clfreport(self)
 
         # todo: fix plt.show() stopping program execution
         # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save)
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save, title=algorithm)
 
     def clfreport(self):
 
@@ -267,6 +303,6 @@ class TuneModel(object):
                 print(str(self.X_test.iloc[i,0]).zfill(2) + "-" + str(self.X_test.iloc[i,0]).zfill(2),
                       self.y_true.iloc[i], self.y_pred[i], self.y_true.iloc[i] - self.y_pred[i])
 
-            if self.type == 'class':
+            if self.modeltype == 'class':
                 print(classification_report(self.y_true, self.y_pred))
             print()

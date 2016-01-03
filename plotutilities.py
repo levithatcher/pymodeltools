@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 #todo: add parameters for labels
-def plottmplfillbetween(y_pred, y_true, save):
+def plottmplfillbetween(y_pred, y_true, save, title):
 
     x = list(range(0,len(y_pred)))
     fig, ax = plt.subplots(1)
@@ -12,9 +12,9 @@ def plottmplfillbetween(y_pred, y_true, save):
     plt.xlim([0, len(y_pred)-1])
     ax.set_ylabel('Drivers needed per day')
     ax.set_xlabel('Day of year')
-    ax.set_title('Linear Regression Prediction')
+    ax.set_title(title)
 
     if save:
-        plt.savefig("TaxiMinPerDay_LinearRegression.png", bbox_inches='tight')
+        plt.savefig("TaxiMinPerDay_" + str(title) + ".png", bbox_inches='tight')
     else:
         plt.show(block=False)
