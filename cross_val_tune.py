@@ -18,6 +18,7 @@ from sklearn.svm import LinearSVR
 import numpy as np
 from pymodeltools import plotutilities
 from pymodeltools import modelutilities
+from sklearn.feature_selection import RFE
 
 
 class TuneModel(object):
@@ -59,6 +60,10 @@ class TuneModel(object):
         self.X_train, self.X_test, self.y_train, self.y_test = cross_validation.train_test_split(
             X, y, test_size=testsize, random_state=0)
 
+        # Get split for viz purposes
+        #self.X_testfinal = X[:100]
+        #self.y_testfinal = y[:100]
+
     def linearreport(self, folds, cores, plotit, save):
         self.folds = folds
         self.cores = cores
@@ -95,7 +100,7 @@ class TuneModel(object):
 
         #Todo: make plotting symmetric between regress/class
         # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save, title=algorithm)
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test, save=save, title=algorithm)
 
     def treesreport(self, folds, cores, plotit, save):
         self.folds = folds
@@ -140,7 +145,7 @@ class TuneModel(object):
         TuneModel.clfreport(self)
 
         # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save, title=algorithm)
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_truefinal, save=save, title=algorithm)
 
     # def extratreesreport(self, folds, cores, plotit, save):
     #     # Todo: this algo should only "only be used within ensemble methods"
@@ -184,7 +189,7 @@ class TuneModel(object):
     #     TuneModel.clfreport(self)
     #
     #     # Plot prediction against truth
-    #     if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save, title=title)
+    #     if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_truefinal, save=save, title=title)
 
     def randomforestreport(self, folds, cores, plotit, save):
         self.folds = folds
@@ -209,13 +214,20 @@ class TuneModel(object):
 
         elif self.modeltype == "regress":
 
+            # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
+            #          #("feature_selection", RFE(
+            #          #   RandomForestRegressor(), 6)),
+            #          ("regress", RandomForestRegressor())])
+
+
+
             algorithm = RandomForestRegressor()
-
+            #
             self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
-
+            #
             baseparam = {'regress__n_estimators': [10,50,100,250,500],
-                        'regress__bootstrap': [True, False]}
-
+                               'regress__bootstrap': [True, False]}
+            #
             self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
             # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
@@ -228,7 +240,8 @@ class TuneModel(object):
         TuneModel.clfreport(self)
 
         # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save, title=algorithm)
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test,
+                                                     save=save, title=algorithm)
 
     def svm(self, folds, cores, plotit, save):
         self.folds = folds
@@ -300,7 +313,7 @@ class TuneModel(object):
 
             print("Date, True, Pred, True-Pred")
             for i in range(0,10):
-                print(str(self.X_test.iloc[i,0]).zfill(2) + "-" + str(self.X_test.iloc[i,0]).zfill(2),
+                print(str(self.X_test.iloc[i,0]).zfill(2) + "-" + str(self.X_test.iloc[i,2]).zfill(2),
                       self.y_true.iloc[i], self.y_pred[i], self.y_true.iloc[i] - self.y_pred[i])
 
             if self.modeltype == 'class':
