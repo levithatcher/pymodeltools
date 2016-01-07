@@ -312,9 +312,11 @@ class TuneModel(object):
             self.y_true, self.y_pred = self.y_test, clf.predict(self.X_test)
 
             print("Date, True, Pred, True-Pred")
-            for i in range(0,10):
-                print(str(self.X_test.iloc[i,0]).zfill(2) + "-" + str(self.X_test.iloc[i,2]).zfill(2),
-                      self.y_true.iloc[i], self.y_pred[i], self.y_true.iloc[i] - self.y_pred[i])
+            for i in range(0,15):
+                print('%s %.0f  %.0f  %.0f' %
+
+                      (str(self.X_test.iloc[i,0]).zfill(2) + "-" + str(self.X_test.iloc[i,2]).zfill(2),
+                      self.y_true.iloc[i], self.y_pred[i], self.y_true.iloc[i] - self.y_pred[i]))
 
             if self.modeltype == 'class':
                 print(classification_report(self.y_true, self.y_pred))
