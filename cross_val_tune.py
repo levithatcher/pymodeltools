@@ -4,21 +4,13 @@ from sklearn.pipeline import Pipeline
 from sklearn.grid_search import GridSearchCV
 from sklearn.feature_selection import SelectFromModel
 from sklearn.metrics import classification_report
-from sklearn.linear_model import LogisticRegression
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import RandomizedLogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.tree import ExtraTreeClassifier
-from sklearn.tree import ExtraTreeRegressor
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.svm import LinearSVC
-from sklearn.svm import LinearSVR
+from sklearn.linear_model import LinearRegression, LogisticRegression, RandomizedLogisticRegression
+from sklearn.linear_model import Ridge
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.svm import LinearSVC, LinearSVR
 import numpy as np
-from pymodeltools import plotutilities
-from pymodeltools import modelutilities
-from sklearn.feature_selection import RFE
+from pymodeltools import plotutilities, modelutilities
 
 
 class TuneModel(object):
@@ -95,8 +87,49 @@ class TuneModel(object):
 
             self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
-        # Fit/Predict and run report
-        TuneModel.clfreport(self)
+        # Fit/Predict, run report, and return fit
+        return TuneModel.clfreport(self)
+
+
+
+        #Todo: make plotting symmetric between regress/class
+        # Plot prediction against truth
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test, save=save, title=algorithm)
+
+    def ridgereport(self, folds, cores, plotit, save):
+        self.folds = folds
+        self.cores = cores
+
+        if self.modeltype == 'class':
+
+            self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
+                                 # Todo: get Logistic feature selection working (test on IU)
+                                ("randlogit", RandomizedLogisticRegression()),
+                                ("logit", LogisticRegression())
+                                 ])
+
+            algorithm = "Logistic_Regression"
+
+            baseparam = "{'logit__C': (np.logspace(-2, 2, 10))"
+
+        elif self.modeltype == 'regress':
+
+            algorithm = Ridge()
+
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+
+            # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
+            #                      # Todo: get Logistic feature selection working (test on IU)
+            #                     #("randlogit", RandomizedLogisticRegression()),
+            #                     ("regress", LinearRegression())
+
+            baseparam = {'regress__alpha': (np.logspace(-2, 2, 10)),
+                         'regress__normalize': (True, False)}
+
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
+
+        # Fit/Predict, run report, and return fit
+        return TuneModel.clfreport(self)
 
         #Todo: make plotting symmetric between regress/class
         # Plot prediction against truth
@@ -141,55 +174,11 @@ class TuneModel(object):
 
             self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
-        # Fit/Predict and run report
-        TuneModel.clfreport(self)
+        # Fit/Predict, run report, and return fit
+        return TuneModel.clfreport(self)
 
         # Plot prediction against truth
         if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_truefinal, save=save, title=algorithm)
-
-    # def extratreesreport(self, folds, cores, plotit, save):
-    #     # Todo: this algo should only "only be used within ensemble methods"
-    #     self.folds = folds
-    #     self.cores = cores
-    #
-    #     if self.modeltype == "class":
-    #
-    #         self.pipeline = Pipeline([("imputer", Imputer(
-    #                                 axis=0)),
-    #                              ("feature_selection", SelectFromModel(
-    #                                 LinearSVC(), threshold="median")),
-    #                              ("extra", ExtraTreeClassifier())])
-    #
-    #         title = "Extra_Tree_Classifier"
-    #
-    #         # Set the parameters by cross-validation
-    #         self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent'),
-    #                       'extra__criterion': ["gini", "entropy"],
-    #                       'extra__class_weight': ["balanced"]
-    #                       }
-    #
-    #     elif self.modeltype == "regress":
-    #
-    #         # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
-    #         #          # Todo: get Logistic feature selection working (test on IU)
-    #         #         #("randlogit", RandomizedLogisticRegression()),
-    #         #         ("regress", ExtraTreeRegressor())
-    #         #          ])
-    #
-    #         algorithm = ExtraTreeRegressor()
-    #
-    #         self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
-    #
-    #         baseparam = {'regress__splitter': ('best','random')}
-    #
-    #         self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
-    #
-    #
-    #     # Fit/Predict and run report
-    #     TuneModel.clfreport(self)
-    #
-    #     # Plot prediction against truth
-    #     if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_truefinal, save=save, title=title)
 
     def randomforestreport(self, folds, cores, plotit, save):
         self.folds = folds
@@ -236,14 +225,14 @@ class TuneModel(object):
             #         ("regress", RandomForestRegressor())
             #          ])
 
-        # Fit/Predict and run report
-        TuneModel.clfreport(self)
+        # Fit/Predict, run report, and return fit
+        return TuneModel.clfreport(self)
 
         # Plot prediction against truth
         if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test,
-                                                     save=save, title=algorithm)
+                                                     save=save, title="RandomForestRegressor with holiday and precip data")
 
-    def svm(self, folds, cores, plotit, save):
+    def svmreport(self, folds, cores, plotit, save):
         self.folds = folds
         self.cores = cores
 
@@ -276,8 +265,8 @@ class TuneModel(object):
 
             self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
-        # Fit/Predict and run report
-        TuneModel.clfreport(self)
+        # Fit/Predict, run report, and return fit
+        return TuneModel.clfreport(self)
 
         # todo: fix plt.show() stopping program execution
         # Plot prediction against truth
@@ -321,3 +310,5 @@ class TuneModel(object):
             if self.modeltype == 'class':
                 print(classification_report(self.y_true, self.y_pred))
             print()
+
+        return clf
