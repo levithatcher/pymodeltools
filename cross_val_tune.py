@@ -56,7 +56,7 @@ class TuneModel(object):
         #self.X_testfinal = X[:100]
         #self.y_testfinal = y[:100]
 
-    def linearreport(self, folds, cores, plotit, save):
+    def linearreport(self, folds, cores, plotit, saveim):
         self.folds = folds
         self.cores = cores
 
@@ -94,9 +94,9 @@ class TuneModel(object):
 
         #Todo: make plotting symmetric between regress/class
         # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test, save=save, title=algorithm)
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test, save=saveim, title=algorithm)
 
-    def ridgereport(self, folds, cores, plotit, save):
+    def ridgereport(self, folds, cores, plotit, saveim):
         self.folds = folds
         self.cores = cores
 
@@ -133,9 +133,9 @@ class TuneModel(object):
 
         #Todo: make plotting symmetric between regress/class
         # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test, save=save, title=algorithm)
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test, save=saveim, title=algorithm)
 
-    def treesreport(self, folds, cores, plotit, save):
+    def treesreport(self, folds, cores, plotit, saveim):
         self.folds = folds
         self.cores = cores
 
@@ -178,9 +178,9 @@ class TuneModel(object):
         return TuneModel.clfreport(self)
 
         # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_truefinal, save=save, title=algorithm)
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_truefinal, save=saveim, title=algorithm)
 
-    def randomforestreport(self, folds, cores, plotit, save):
+    def randomforestreport(self, folds, cores, plotit, saveim):
         self.folds = folds
         self.cores = cores
 
@@ -230,9 +230,9 @@ class TuneModel(object):
 
         # Plot prediction against truth
         if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test,
-                                                     save=save, title="RandomForestRegressor with holiday and precip data")
+                                                     save=saveim, title="RandomForestRegressor with holiday and precip data")
 
-    def svmreport(self, folds, cores, plotit, save):
+    def svmreport(self, folds, cores, plotit, saveim):
         self.folds = folds
         self.cores = cores
 
@@ -270,7 +270,7 @@ class TuneModel(object):
 
         # todo: fix plt.show() stopping program execution
         # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=save, title=algorithm)
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=saveim, title=algorithm)
 
     def clfreport(self, printsample=False):
 
