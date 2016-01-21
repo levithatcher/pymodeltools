@@ -254,8 +254,8 @@ class TuneModel(object):
             #
             self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
             #
-            baseparam = {'regress__loss': ['ls','lad','huber'],
-                         'regress__learning_rate': [0.05, 0.1],
+            baseparam = {'regress__loss': ['ls','lad'],
+                         #'regress__learning_rate': [0.05, 0.1],
                          'regress__n_estimators': [50,100,250]}
 
             #
