@@ -135,7 +135,7 @@ class TuneModel(object):
         # Plot prediction against truth
         if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test, save=saveim, title=algorithm)
 
-    def treesreport(self, folds, cores, plotit, saveim):
+    def treereport(self, folds, cores, plotit, saveim):
         self.folds = folds
         self.cores = cores
 
