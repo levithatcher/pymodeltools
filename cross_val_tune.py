@@ -256,7 +256,7 @@ class TuneModel(object):
             #
             baseparam = {'regress__loss': ['ls','lad'],
                          #'regress__learning_rate': [0.05, 0.1],
-                         'regress__n_estimators': [50,100,250]}
+                         'regress__n_estimators': [50,100,250,350,500]}
 
             #
             self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
