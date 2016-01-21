@@ -7,7 +7,7 @@ from sklearn.metrics import classification_report
 from sklearn.linear_model import LinearRegression, LogisticRegression, RandomizedLogisticRegression
 from sklearn.linear_model import Ridge
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingRegressor
 from sklearn.svm import LinearSVC, LinearSVR
 import numpy as np
 from pymodeltools import plotutilities, modelutilities
@@ -103,10 +103,10 @@ class TuneModel(object):
         if self.modeltype == 'class':
 
             self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
-                                 # Todo: get Logistic feature selection working (test on IU)
-                                ("randlogit", RandomizedLogisticRegression()),
-                                ("logit", LogisticRegression())
-                                 ])
+                                      # Todo: get Logistic feature selection working
+                                      ("randlogit", RandomizedLogisticRegression()),
+                                      ("logit", LogisticRegression())
+                                        ])
 
             algorithm = "Logistic_Regression"
 
@@ -155,8 +155,8 @@ class TuneModel(object):
 
             # Set the parameters by cross-validation
             self.parameters = {'trees__criterion': ["gini", "entropy"],
-                          'trees__class_weight': ["balanced"],
-                          'imputer__strategy': ('mean', 'median', 'most_frequent')}
+                               'trees__class_weight': ["balanced"],
+                               'imputer__strategy': ('mean', 'median', 'most_frequent')}
 
         elif self.modeltype == "regress":
 
@@ -196,10 +196,10 @@ class TuneModel(object):
 
             # Set the parameters by cross-validation
             self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent'),
-                        'randforest__criterion': ["gini", "entropy"],
-                        'randforest__n_estimators': [10,50,100,250,500],
-                        'randforest__bootstrap': [True, False],
-                        'randforest__class_weight': ["balanced", "balanced_subsample"]}
+                               'randforest__criterion': ["gini", "entropy"],
+                               'randforest__n_estimators': [10,50,100,250,500],
+                               'randforest__bootstrap': [True, False],
+                               'randforest__class_weight': ["balanced", "balanced_subsample"]}
 
         elif self.modeltype == "regress":
 
@@ -231,6 +231,49 @@ class TuneModel(object):
         # Plot prediction against truth
         if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test,
                                                      save=saveim, title="RandomForestRegressor with holiday and precip data")
+
+    def gradboostreport(self, folds, cores, plotit, saveim):
+        self.folds = folds
+        self.cores = cores
+
+        if self.modeltype == "class":
+
+            pass
+            #todo: set up classifier gridsearch
+
+        elif self.modeltype == "regress":
+
+            # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
+            #          #("feature_selection", RFE(
+            #          #   RandomForestRegressor(), 6)),
+            #          ("regress", RandomForestRegressor())])
+
+
+
+            algorithm = GradientBoostingRegressor()
+            #
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+            #
+            baseparam = {'regress__loss': ['ls','lad','huber'],
+                         'regress__learning_rate': [0.05, 0.1],
+                         'regress__n_estimators': [50,100,250]}
+
+            #
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
+
+            # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
+            #          # Todo: get Logistic feature selection working (test on IU)
+            #         #("randlogit", RandomizedLogisticRegression()),
+            #         ("regress", RandomForestRegressor())
+            #          ])
+
+        # Fit/Predict, run report, and return fit
+        return TuneModel.clfreport(self)
+
+        # Plot prediction against truth
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test,
+                                                     save=saveim, title="RandomForestRegressor with holiday and precip data")
+
 
     def svmreport(self, folds, cores, plotit, saveim):
         self.folds = folds
