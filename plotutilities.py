@@ -4,8 +4,7 @@ from datetime import datetime
 import datetime as dt
 
 #todo: add parameters for labels
-def plottmplfillbetween(y_pred, y_true, xlabel, saveim, title):
-
+def plottmplfillbetween(y_pred, y_true, saveit, title):
     x = list(range(0,len(y_pred)))
     fig, ax = plt.subplots(1)
     ax.plot(x, y_true, linewidth=2, color='k')
@@ -17,7 +16,7 @@ def plottmplfillbetween(y_pred, y_true, xlabel, saveim, title):
     ax.set_xlabel('Day of year')
     ax.set_title(title)
 
-    if saveim:
-        plt.savefig("TaxiMinPerDay_" + str(title) + ".png", bbox_inches='tight')
+    if saveit:
+        plt.savefig("TaxiDriversPerDay_" + str(title) + ".png", bbox_inches='tight')
     else:
         plt.show(block=False)

@@ -56,7 +56,7 @@ class TuneModel(object):
         #self.X_testfinal = X[:100]
         #self.y_testfinal = y[:100]
 
-    def linearreport(self, folds, cores, plotit, saveim):
+    def linearreport(self, folds, cores, plotit, saveit):
         self.folds = folds
         self.cores = cores
 
@@ -87,16 +87,13 @@ class TuneModel(object):
 
             self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
-        # Fit/Predict, run report, and return fit
-        return TuneModel.clfreport(self)
-
-
-
         #Todo: make plotting symmetric between regress/class
-        # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test, save=saveim, title=algorithm)
+        #Todo: make plotit, saveit False everywhere by default (such that they're optional parameters)
+        # Fit/Predict, run report, and return fit
 
-    def ridgereport(self, folds, cores, plotit, saveim):
+        return TuneModel.clfreport(self, printsample=True, plotit=plotit, saveit=saveit, title="LinearRegression")
+
+    def ridgereport(self, folds, cores, plotit, saveit):
         self.folds = folds
         self.cores = cores
 
@@ -128,14 +125,11 @@ class TuneModel(object):
 
             self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
-        # Fit/Predict, run report, and return fit
-        return TuneModel.clfreport(self)
-
         #Todo: make plotting symmetric between regress/class
-        # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test, save=saveim, title=algorithm)
+        # Fit/Predict, run report, and return fit
+        return TuneModel.clfreport(self, printsample=True, plotit=plotit, saveit=saveit, title="RidgeRegression")
 
-    def treereport(self, folds, cores, plotit, saveim):
+    def treereport(self, folds, cores, plotit, saveit):
         self.folds = folds
         self.cores = cores
 
@@ -175,12 +169,10 @@ class TuneModel(object):
             self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
         # Fit/Predict, run report, and return fit
-        return TuneModel.clfreport(self)
+        return TuneModel.clfreport(self, printsample=True, plotit=plotit, saveit=saveit, title="DecisionTree")
 
-        # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_truefinal, save=saveim, title=algorithm)
-
-    def randomforestreport(self, folds, cores, plotit, saveim):
+    def randomforestreport(self, folds, cores, plotit, saveit):
+        print(saveit)
         self.folds = folds
         self.cores = cores
 
@@ -214,8 +206,8 @@ class TuneModel(object):
             #
             self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
             #
-            baseparam = {'regress__n_estimators': [10,50,100,250,500],
-                               'regress__bootstrap': [True, False]}
+            baseparam = {'regress__n_estimators': [10,50,100,250,500]}
+
             #
             self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
@@ -226,13 +218,9 @@ class TuneModel(object):
             #          ])
 
         # Fit/Predict, run report, and return fit
-        return TuneModel.clfreport(self)
+        return TuneModel.clfreport(self, printsample=True, plotit=plotit, saveit=saveit, title="RandomForest")
 
-        # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test,
-                                                     save=saveim, title="RandomForestRegressor with holiday and precip data")
-
-    def gradboostreport(self, folds, cores, plotit, saveim):
+    def gradboostreport(self, folds, cores, plotit, saveit):
         self.folds = folds
         self.cores = cores
 
@@ -268,14 +256,9 @@ class TuneModel(object):
             #          ])
 
         # Fit/Predict, run report, and return fit
-        return TuneModel.clfreport(self)
+        return TuneModel.clfreport(self, printsample=True, plotit=plotit, saveit=saveit, title="GradientBoosting")
 
-        # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, self.X_test,
-                                                     save=saveim, title="RandomForestRegressor with holiday and precip data")
-
-
-    def svmreport(self, folds, cores, plotit, saveim):
+    def svmreport(self, folds, cores, plotit, saveit):
         self.folds = folds
         self.cores = cores
 
@@ -308,14 +291,11 @@ class TuneModel(object):
 
             self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
 
-        # Fit/Predict, run report, and return fit
-        return TuneModel.clfreport(self)
-
         # todo: fix plt.show() stopping program execution
-        # Plot prediction against truth
-        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, save=saveim, title=algorithm)
+        # Fit/Predict, run report, and return fit
+        return TuneModel.clfreport(self, printsample=True, plotit=plotit, saveit=saveit, title="SVM")
 
-    def clfreport(self, printsample=False):
+    def clfreport(self, printsample=False, plotit=False, saveit=False, title=""):
 
         for score in self.scores:
             print("# Tuning hyper-parameters for %s" % score)
@@ -343,16 +323,18 @@ class TuneModel(object):
             print()
             self.y_true, self.y_pred = self.y_test, clf.predict(self.X_test)
 
-            if printsample:
-                print("Date, True, Pred, True-Pred")
-                for i in range(0,15):
-                    print('%s %.0f  %.0f  %.0f' %
-
-                          (str(self.X_test.iloc[i,0]).zfill(2) + "-" + str(self.X_test.iloc[i,2]).zfill(2),
-                          self.y_true.iloc[i], self.y_pred[i], self.y_true.iloc[i] - self.y_pred[i]))
-
             if self.modeltype == 'class':
                 print(classification_report(self.y_true, self.y_pred))
             print()
+
+        if printsample:
+                print("Date, True, Pred, True-Pred")
+                for i in range(0,15):
+                    print('%s %.0f  %.0f  %.0f' %
+                          (str(self.X_test.iloc[i,0]).zfill(2) + "-" + str(self.X_test.iloc[i,2]).zfill(2),
+                          self.y_true.iloc[i], self.y_pred[i], self.y_true.iloc[i] - self.y_pred[i]))
+
+        # Plot prediction against truth
+        if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, saveit=saveit, title=title)
 
         return clf
