@@ -52,31 +52,32 @@ class TuneModel(object):
         self.X_train, self.X_test, self.y_train, self.y_test = cross_validation.train_test_split(
             X, y, test_size=testsize, random_state=0)
 
-        # Get split for viz purposes
-        #self.X_testfinal = X[:100]
-        #self.y_testfinal = y[:100]
-
-    def linearreport(self, folds, cores, plotit, saveit):
+    def logitreport(self, folds, cores, plotit, saveit):
         self.folds = folds
         self.cores = cores
 
-        if self.modeltype == 'class':
+        if self.modeltype == 'classify':
 
-            self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
-                                 # Todo: get Logistic feature selection working (test on IU)
-                                ("randlogit", RandomizedLogisticRegression()),
-                                ("logit", LogisticRegression())
-                                 ])
+            algorithm = LogisticRegression()
 
-            algorithm = "Logistic_Regression"
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute, self.modeltype)
 
-            baseparam = "{'logit__C': (np.logspace(-2, 2, 10))"
+            # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
+            #                      # Todo: get Logistic feature selection working (test on IU)
+            #                     ("randlogit", RandomizedLogisticRegression()),
+            #                     ("logit", LogisticRegression())
+            #                      ])
+
+
+            baseparam = {'classify__C': (np.logspace(-2, 2, 10))}
+
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute, self.modeltype)
 
         elif self.modeltype == 'regress':
 
             algorithm = LinearRegression()
 
-            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute, self.modeltype)
 
             # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
             #                      # Todo: get Logistic feature selection working (test on IU)
@@ -85,7 +86,7 @@ class TuneModel(object):
 
             baseparam = {'regress__normalize': (False, True)}
 
-            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute, self.modeltype)
 
         #Todo: make plotting symmetric between regress/class
         #Todo: make plotit, saveit False everywhere by default (such that they're optional parameters)
@@ -97,7 +98,7 @@ class TuneModel(object):
         self.folds = folds
         self.cores = cores
 
-        if self.modeltype == 'class':
+        if self.modeltype == 'classify':
 
             self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
                                       # Todo: get Logistic feature selection working
@@ -113,7 +114,7 @@ class TuneModel(object):
 
             algorithm = Ridge()
 
-            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute, self.modeltype)
 
             # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
             #                      # Todo: get Logistic feature selection working (test on IU)
@@ -123,7 +124,7 @@ class TuneModel(object):
             baseparam = {'regress__alpha': (np.logspace(-2, 2, 10)),
                          'regress__normalize': (True, False)}
 
-            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute, self.modeltype)
 
         #Todo: make plotting symmetric between regress/class
         # Fit/Predict, run report, and return fit
@@ -133,7 +134,7 @@ class TuneModel(object):
         self.folds = folds
         self.cores = cores
 
-        if self.modeltype == "class":
+        if self.modeltype == 'classify':
 
             self.pipeline = Pipeline([("imputer", Imputer(
                                      axis=0)),
@@ -145,7 +146,7 @@ class TuneModel(object):
 
             #algorithm = DecisionTreeClassifier()
 
-            #self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+            #self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute, self.modeltype)
 
             # Set the parameters by cross-validation
             self.parameters = {'trees__criterion': ["gini", "entropy"],
@@ -162,54 +163,50 @@ class TuneModel(object):
 
             algorithm = DecisionTreeRegressor()
 
-            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute, self.modeltype)
 
             baseparam = {'regress__splitter': ('best','random')}
 
-            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute, self.modeltype)
 
         # Fit/Predict, run report, and return fit
         return TuneModel.clfreport(self, printsample=True, plotit=plotit, saveit=saveit, title="DecisionTree")
 
     def randomforestreport(self, folds, cores, plotit, saveit):
-        print(saveit)
         self.folds = folds
         self.cores = cores
 
-        if self.modeltype == "class":
+        if self.modeltype == 'classify':
 
-            self.pipeline = Pipeline([("imputer", Imputer(
-                                    axis=0)),
-                                 ("feature_selection", SelectFromModel(
-                                    LinearSVC(), threshold="median")),
-                                 ("randforest", RandomForestClassifier())])
+            # self.pipeline = Pipeline([("imputer", Imputer(
+            #                         axis=0)),
+            #                      ("feature_selection", SelectFromModel(
+            #                         LinearSVC(), threshold="median")),
+            #                      ("randforest", RandomForestClassifier())])
 
-            title = "Random_Forest_Classifier"
+            algorithm = RandomForestClassifier()
 
-            # Set the parameters by cross-validation
-            self.parameters = {'imputer__strategy': ('mean', 'median', 'most_frequent'),
-                               'randforest__criterion': ["gini", "entropy"],
-                               'randforest__n_estimators': [10,50,100,250,500],
-                               'randforest__bootstrap': [True, False],
-                               'randforest__class_weight': ["balanced", "balanced_subsample"]}
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute, self.modeltype)
+
+            baseparam = {'classify__n_estimators': [10,50,100,250,500]}
+
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute, self.modeltype)
 
         elif self.modeltype == "regress":
 
+            # todo: Add auto feature selection into auto pipeline creation
             # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
             #          #("feature_selection", RFE(
             #          #   RandomForestRegressor(), 6)),
             #          ("regress", RandomForestRegressor())])
 
-
-
             algorithm = RandomForestRegressor()
-            #
-            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
-            #
+
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute, self.modeltype)
+
             baseparam = {'regress__n_estimators': [10,50,100,250,500]}
 
-            #
-            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute, self.modeltype)
 
             # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
             #          # Todo: get Logistic feature selection working (test on IU)
@@ -224,7 +221,7 @@ class TuneModel(object):
         self.folds = folds
         self.cores = cores
 
-        if self.modeltype == "class":
+        if self.modeltype == 'classify':
 
             pass
             #todo: set up classifier gridsearch
@@ -240,14 +237,14 @@ class TuneModel(object):
 
             algorithm = GradientBoostingRegressor()
             #
-            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute, self.modeltype)
             #
             baseparam = {'regress__loss': ['ls','lad'],
                          #'regress__learning_rate': [0.05, 0.1],
                          'regress__n_estimators': [75,100,250,350,500]}
 
             #
-            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute, self.modeltype)
 
             # self.pipeline = Pipeline([("imputer", Imputer(axis=0)),
             #          # Todo: get Logistic feature selection working (test on IU)
@@ -262,7 +259,7 @@ class TuneModel(object):
         self.folds = folds
         self.cores = cores
 
-        if self.modeltype == "class":
+        if self.modeltype == 'classify':
 
             self.pipeline = Pipeline([("imputer", Imputer(
                                     axis=0)),
@@ -285,11 +282,11 @@ class TuneModel(object):
 
             algorithm = LinearSVR()
 
-            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute)
+            self.pipeline = modelutilities.buildclfpipeline(algorithm, self.impute, self.modeltype)
 
             baseparam = {'regress__C': (np.logspace(-2, 2, 10))}
 
-            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute)
+            self.parameters = modelutilities.buildgridparameters(baseparam, self.impute, self.modeltype)
 
         # todo: fix plt.show() stopping program execution
         # Fit/Predict, run report, and return fit
@@ -323,18 +320,18 @@ class TuneModel(object):
             print()
             self.y_true, self.y_pred = self.y_test, clf.predict(self.X_test)
 
-            if self.modeltype == 'class':
+            if self.modeltype == 'classify':
                 print(classification_report(self.y_true, self.y_pred))
             print()
 
         if printsample:
-                print("Date, True, Pred, True-Pred")
-                for i in range(0,15):
-                    print('%s %.0f  %.0f  %.0f' %
-                          (str(self.X_test.iloc[i,0]).zfill(2) + "-" + str(self.X_test.iloc[i,2]).zfill(2),
-                          self.y_true.iloc[i], self.y_pred[i], self.y_true.iloc[i] - self.y_pred[i]))
+
+                print("Old, NewTrue, Pred, True-Pred")
+                for i in range(0,50):
+                    print('%.0f    %.0f        %.0f     %.0f' %
+                          (self.X_test['oldpastdue'].iloc[i], self.y_true.iloc[i], self.y_pred[i], self.y_true.iloc[i] - self.y_pred[i]))
 
         # Plot prediction against truth
         if plotit: plotutilities.plottmplfillbetween(self.y_pred, self.y_true, saveit=saveit, title=title)
 
-        return clf
+        #return clf

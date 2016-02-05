@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     p = TuneModel(df,'OnlineOrderFlag', testsize=.5, type='regress')
     #
-    p.linearreport(folds=2,cores=6)
+    p.logitreport(folds=2, cores=6)
     #
     # p.treesreport(folds=2, cores=6)
     #

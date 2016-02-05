@@ -1,44 +1,54 @@
 from sklearn.preprocessing import Imputer
 from sklearn.pipeline import Pipeline
-from sklearn.linear_model import LogisticRegression
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import RandomizedLogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.tree import ExtraTreeClassifier
-from sklearn.tree import ExtraTreeRegressor
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.svm import LinearSVC
-from sklearn.svm import LinearSVR
 import pandas as pd
 
-def buildclfpipeline(algorithm, impute):
-    if impute:
+def buildclfpipeline(algorithm, impute, modeltype):
+    if impute and modeltype == 'regress':
         pipestring = Pipeline([
                               ("imputer", Imputer(axis=0)),
                               ("regress", algorithm)
                               ])
-    else:
+    elif not impute and modeltype == 'regress':
+        pipestring=algorithm
+
+    elif impute and modeltype == 'classify':
+        pipestring = Pipeline([
+                              ("imputer", Imputer(axis=0)),
+                              ("classify", algorithm)
+                              ])
+    elif not impute and modeltype == 'classify':
         pipestring=algorithm
 
     return pipestring
 
-def buildgridparameters(baseparam, impute):
+def buildgridparameters(baseparam, impute, modeltype):
 
-    if impute:
+    if impute and modeltype == 'regress':
 
         baseparam['imputer__strategy']=('mean', 'median', 'most_frequent')
 
-        return baseparam
-
-    elif not impute:
+    elif not impute and modeltype == 'regress':
         # If we're not Imputing (and not using Pipeline), take regress__ out of dict
         for key, value in baseparam.items():   # iter on both keys and values
             if key.startswith('regress__'):
                 baseparam[key.replace("regress__","")] = baseparam.pop(key)
 
-        return baseparam
+    elif impute and modeltype == 'classify':
+
+        baseparam['imputer__strategy']=('mean', 'median', 'most_frequent')
+
+    elif not impute and modeltype == 'classify':
+        # If we're not Imputing (and not using Pipeline), take regress__ out of dict
+        for key, value in baseparam.items():   # iter on both keys and values
+            if key.startswith('classify__'):
+                baseparam[key.replace("classify__","")] = baseparam.pop(key)
+
+    return baseparam
+
+def print_full(x):
+    pd.set_option('display.max_rows', len(x))
+    print(x)
+    pd.reset_option('display.max_rows')
 
 def create_future_X_test(start, end, periods=0, freq='D', holidays=False):
     """Creates a dataframe (Xtest) for predicting into future (past training dataset)
